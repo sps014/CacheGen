@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Drawing;
 
 namespace CacheSourceGenerator
 {
@@ -28,8 +29,7 @@ namespace CacheSourceGenerator
             {
                 var nodes= t.GetRoot().DescendantNodes().ToList();
 
-                var methods=ProcessLocalMethod(nodes);
-                methods.AddRange(ProcessFunction(nodes));
+                var methods=ProcessFunction(nodes);
 
                 foreach(var method in methods)
                 {
@@ -37,24 +37,62 @@ namespace CacheSourceGenerator
                 }
             }
         }
-        private void GenerateCachedVariant(SyntaxNode function)
+        private void GenerateCachedVariant(LocalFunctionStatementSyntax function)
         {
-            int size=GetSizeOfCache(function);
+            int size=GetSizeOfCache(function);   
+            var newDef=GetFunctionCachedDefinition(function);
+        }
+        private string GetFunctionCachedDefinition(LocalFunctionStatementSyntax method)
+        {
+            string result = "";
+            //add modifiers
+            result += method.Modifiers.ToFullString();
+            // add return type
+            result += $"{method.ReturnType.GetText()}";
+            //add function name 
+            result += $"{method.Identifier.ValueText}Cached";
+            //add brackets and parameters
+            result += $"{method.ParameterList.ToFullString()}{{\r\n";
+
+            string paramName = string.Join(",", method.ParameterList.Parameters.Select(x => x.Identifier));
+            //add cacherefer
+            result += $"\tvar contains = cache.Refer({paramName});\r\n";
+            result += $"\tif(contains)";
+
+            bool isVoid=false;
+
+            if(method.ReturnType.GetText().ToString().Contains("void"))
+            {
+                isVoid=true;
+                result += "return;\r\n";
+            }
+            else
+            {
+                result += $"return cache.Get({paramName});\r\n";
+            }
+
+            foreach (var st in method.Body.Statements)
+            {
+                var stmt=st.GetText().ToString();
+                
+                if (stmt.Contains("return") && !isVoid)
+                {
+                    var r = stmt.Replace("return ", $"return cache.AddResult({paramName},").TrimEnd(new char[] {'\r','\n',';'});
+                    result += r+");\r\n";
+                }
+                else
+                    result += stmt;
+            }
+            result += "}";
+            Console.WriteLine(result);
+            return result;
         }
 
         private int GetSizeOfCache(SyntaxNode function)
         {
             int size = LruSize;
-            if (function is LocalDeclarationStatementSyntax localfunction)
-            {
-                var attrbutes = localfunction.AttributeLists;
-                size = GetAttributeSize(attrbutes);
-            }
-            else if (function is MethodDeclarationSyntax method)
-            {
-                var attrbutes = method.AttributeLists;
-                size = GetAttributeSize(attrbutes);
-            }
+            var attrbutes = (function as LocalFunctionStatementSyntax).AttributeLists;
+            size = GetAttributeSize(attrbutes);
             return size;
         }
         private int GetAttributeSize(SyntaxList<AttributeListSyntax> attrbutes)
@@ -78,18 +116,11 @@ namespace CacheSourceGenerator
             return LruSize;
         }
 
-        private List<SyntaxNode> ProcessLocalMethod(List<SyntaxNode> nodes)
+ 
+        private IEnumerable<LocalFunctionStatementSyntax> ProcessFunction(List<SyntaxNode> nodes)
         {
-            IEnumerable<SyntaxNode> v= nodes.OfType<LocalFunctionStatementSyntax>()
-                .Where(f=>f.AttributeLists.Count(a=>a.GetText().ToString().Contains("[LruCache"))>0);
-            return v.ToList();
-
-        }
-        private IEnumerable<SyntaxNode> ProcessFunction(List<SyntaxNode> nodes)
-        {
-            IEnumerable<SyntaxNode> lf = nodes.OfType<MethodDeclarationSyntax>()
-                .Where(f => f.AttributeLists.Count(a => a.GetText().ToString().Contains("[LruCache")) > 0);
-            return lf;
+            return nodes.OfType<LocalFunctionStatementSyntax>()
+               .Where(f => f.AttributeLists.Count(a => a.GetText().ToString().Contains("[LruCache")) > 0);
         }
 
 

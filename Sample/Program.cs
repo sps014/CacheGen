@@ -6,8 +6,8 @@ LruCache<int,int> cache = new(100);
 Console.WriteLine(Fibbo(10));
 Console.WriteLine(Fibbo(100));
 
-[LruCache]
-int Fibbo2(int x)
+[LruCache(5000)]
+static int Fibbo2(int x)
 {
     if (x == 1 || x == 0)
         return 0;
@@ -25,8 +25,7 @@ int Fibbo(int n)
 
     if (n == 1 || n==0)
     {
-        cache.AddResult(n, n);
-        return n;
+        return cache.AddResult(n, n);
     }
 
     var v= Fibbo(n - 1)+Fibbo(n-2);
@@ -121,12 +120,13 @@ public class LruCache<T,R>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddResult(T input,R output)
+    public R AddResult(T input,R output)
     {
         if(result.ContainsKey(input))
             result[input] = output;
         else
             result.Add(input, output);
+        return output;
     }
 }
 
