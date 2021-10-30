@@ -4,12 +4,14 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace CacheSourceGenerator
 {
     [Generator]
     public class MySourceGenerator : ISourceGenerator
     {
+        public const int LruSize = 10000;
         public void Execute(GeneratorExecutionContext context)
         {
 
@@ -25,6 +27,7 @@ namespace CacheSourceGenerator
             foreach(var t in trees)
             {
                 var nodes= t.GetRoot().DescendantNodes().ToList();
+
                 var methods=ProcessLocalMethod(nodes);
                 methods.AddRange(ProcessFunction(nodes));
 
@@ -36,7 +39,43 @@ namespace CacheSourceGenerator
         }
         private void GenerateCachedVariant(SyntaxNode function)
         {
+            int size=GetSizeOfCache(function);
+        }
 
+        private int GetSizeOfCache(SyntaxNode function)
+        {
+            int size = LruSize;
+            if (function is LocalDeclarationStatementSyntax localfunction)
+            {
+                var attrbutes = localfunction.AttributeLists;
+                size = GetAttributeSize(attrbutes);
+            }
+            else if (function is MethodDeclarationSyntax method)
+            {
+                var attrbutes = method.AttributeLists;
+                size = GetAttributeSize(attrbutes);
+            }
+            return size;
+        }
+        private int GetAttributeSize(SyntaxList<AttributeListSyntax> attrbutes)
+        {
+            foreach(var attribute in attrbutes)
+            {
+                var text = attribute.GetText().ToString();
+                if (text.Contains("[LruCache]"))
+                    return LruSize;
+                else
+                {
+                    var m = Regex.Match(text, @"\[LruCache\((\d+)\)]");
+                    if (m.Success)
+                        return int.Parse(m.Groups[1].Value);
+                    m = Regex.Match(text, @"\[LruCache\(maxsize:(\d+)\)]");
+                    if (m.Success)
+                        return int.Parse(m.Groups[1].Value);
+                }
+            }
+
+            return LruSize;
         }
 
         private List<SyntaxNode> ProcessLocalMethod(List<SyntaxNode> nodes)
