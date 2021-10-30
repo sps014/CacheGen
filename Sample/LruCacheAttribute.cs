@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sample
 {
+    [AttributeUsage(AttributeTargets.Method,AllowMultiple =false)]
     public class LruCacheAttribute:Attribute
     {
         public int MaxSize { get; set; }

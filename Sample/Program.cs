@@ -6,14 +6,14 @@ LruCache<int,int> cache = new(100);
 Console.WriteLine(Fibbo(10));
 Console.WriteLine(Fibbo(100));
 
-//[LruCache]
-//int Fibbo2(int x)
-//{
-//    if (x == 1 || x == 0)
-//        return 0;
+[LruCache]
+int Fibbo2(int x)
+{
+    if (x == 1 || x == 0)
+        return 0;
 
-//    return Fibbo2Cached(x - 1) + Fibbo2Cached(x - 2);
-//}
+    return Fibbo2(x - 1) + Fibbo2(x - 2);
+}
 
 
 int Fibbo(int n)
