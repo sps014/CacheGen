@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Drawing;
+using System.Text;
 
 namespace CacheSourceGenerator
 {
@@ -20,10 +21,16 @@ namespace CacheSourceGenerator
             var trees = context.Compilation.SyntaxTrees
                 .Where(t => t.GetRoot().DescendantNodes().OfType<AttributeSyntax>()
                 .Where(a=>a.Name.ToString().Contains("LruCache")).Count()>0);
-            
-            ProcessTrees(trees);
+            StringBuilder sb= new StringBuilder();
+            sb.AppendLine("using System;");
+            sb.AppendLine("namespace CacheGen;");
+            sb.AppendLine("public static class Gen{");
+            ProcessTrees(trees,sb);
+            sb.AppendLine("}");
+
+            context.AddSource("cacheGen.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
-        private void ProcessTrees(IEnumerable<SyntaxTree> trees)
+        private void ProcessTrees(IEnumerable<SyntaxTree> trees,StringBuilder sb)
         {
             foreach(var t in trees)
             {
@@ -33,18 +40,21 @@ namespace CacheSourceGenerator
 
                 foreach(var method in methods)
                 {
-                    GenerateCachedVariant(method);
+                    sb.AppendLine(GenerateCachedVariant(method));
                 }
             }
         }
-        private void GenerateCachedVariant(LocalFunctionStatementSyntax function)
+        private string GenerateCachedVariant(LocalFunctionStatementSyntax function)
         {
             int size=GetSizeOfCache(function);   
             var newDef=GetFunctionCachedDefinition(function);
+            string cache = $"static LruCache<int,int> cache = new({size});";
+
+            return cache +"\r\n"+ newDef;
         }
         private string GetFunctionCachedDefinition(LocalFunctionStatementSyntax method)
         {
-            string result = "";
+            string result = "public ";
             //add modifiers
             result += method.Modifiers.ToFullString();
             // add return type
@@ -83,7 +93,7 @@ namespace CacheSourceGenerator
                 else
                     result += stmt;
             }
-            result += "}";
+            result += "}\r\n";
             Console.WriteLine(result);
             return result;
         }

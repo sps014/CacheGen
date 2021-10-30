@@ -1,39 +1,39 @@
 ﻿using Sample;
 using System.Runtime.CompilerServices;
+using static CacheGen.Gen;
 
-
-LruCache<int,int> cache = new(100);
-Console.WriteLine(Fibbo(10));
-Console.WriteLine(Fibbo(100));
+//LruCache<int,int> cache = new(100);
+//Console.WriteLine(Fibbo(10));
+Console.WriteLine(Fibbo2(10));
 
 [LruCache(5000)]
 static int Fibbo2(int x)
 {
     if (x == 1 || x == 0)
-        return 0;
+        return x;
 
-    return Fibbo2(x - 1) + Fibbo2(x - 2);
+    return Fibbo2Cached(x - 1) + Fibbo2Cached(x - 2);
 }
 
 
-int Fibbo(int n)
-{
-    var contains=cache.Refer(n);
+//int Fibbo(int n)
+//{
+//    var contains=cache.Refer(n);
 
-    if(contains)
-        return cache.Get(n);
+//    if(contains)
+//        return cache.Get(n);
 
-    if (n == 1 || n==0)
-    {
-        return cache.AddResult(n, n);
-    }
+//    if (n == 1 || n==0)
+//    {
+//        return cache.AddResult(n, n);
+//    }
 
-    var v= Fibbo(n - 1)+Fibbo(n-2);
+//    var v= Fibbo(n - 1)+Fibbo(n-2);
 
-    cache.AddResult(n, v);
+//    cache.AddResult(n, v);
 
-    return v;
-}
+//    return v;
+//}
 
 public class LruCache<T,R>
 {
