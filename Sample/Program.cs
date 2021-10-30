@@ -3,7 +3,7 @@
 
 LruCache<int,int> cache = new(100);
 Console.WriteLine(Fibbo(10));
-
+Console.WriteLine(Fibbo(100));
 int Fibbo(int n)
 {
     var contains=cache.Refer(n);
@@ -12,7 +12,10 @@ int Fibbo(int n)
         return cache.Get(n);
 
     if (n == 1 || n==0)
+    {
+        cache.AddResult(n, n);
         return n;
+    }
 
     var v= Fibbo(n - 1)+Fibbo(n-2);
 
