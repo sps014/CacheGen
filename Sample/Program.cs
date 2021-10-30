@@ -2,19 +2,26 @@
 using System.Runtime.CompilerServices;
 using static CacheGen.Gen;
 
-//LruCache<int,int> cache = new(100);
-//Console.WriteLine(Fibbo(10));
-Console.WriteLine(Fibbo2(10));
+
+
+Console.WriteLine(Fibbo(10));
 
 [LruCache(5000)]
-static int Fibbo2(int x)
+
+static int Fibbo(int x)
 {
     if (x == 1 || x == 0)
         return x;
 
-    return Fibbo2Cached(x - 1) + Fibbo2Cached(x - 2);
+    return FibboCached(x - 1) + FibboCached(x - 2);
 }
 
+
+
+
+//Console.WriteLine(Fibbo(10));
+
+//LruCache<int,int> cache = new(100);
 
 //int Fibbo(int n)
 //{
