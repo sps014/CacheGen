@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sample
+
+namespace LibCache
 {
     [AttributeUsage(AttributeTargets.Method,AllowMultiple =false)]
     public class LruCacheAttribute:Attribute

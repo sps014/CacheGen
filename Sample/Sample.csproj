@@ -8,6 +8,7 @@
   </PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="../CacheSourceGenerator/CacheSourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+		<ProjectReference Include="..\LibCache\LibCache.csproj" />
 	</ItemGroup>
 
 </Project>

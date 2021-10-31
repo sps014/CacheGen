@@ -26,8 +26,8 @@ namespace CacheSourceGenerator
                 .Where(a=>a.Name.ToString().Contains("LruCache")).Count()>0);
             StringBuilder sb= new StringBuilder();
             sb.AppendLine("using System;");
-            sb.AppendLine("namespace CacheGen;");
-            sb.AppendLine("public static class Gen{");
+            sb.AppendLine("namespace LibCache;");
+            sb.AppendLine("public static partial class Gen\r\n{");
             ProcessTrees(trees,sb);
             sb.AppendLine("}");
             var str = sb.ToString();
