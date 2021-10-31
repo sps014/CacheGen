@@ -94,7 +94,6 @@ namespace CacheSourceGenerator
                     continue;
                 }
 
-                //var returns =statement.DescendantNodes().OfType<ReturnStatementSyntax>().ToList();
                 if(statement is ReturnStatementSyntax @return)
                 {
                     GenerateReturn(writer,ref cacheName,ref paramName, @return);
