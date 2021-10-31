@@ -5,9 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Drawing;
 using System.Text;
-using System.Xml.Linq;
 using System.CodeDom.Compiler;
 using System.IO;
 
@@ -99,8 +97,7 @@ namespace CacheSourceGenerator
                 //var returns =statement.DescendantNodes().OfType<ReturnStatementSyntax>().ToList();
                 if(statement is ReturnStatementSyntax @return)
                 {
-                    var expr = @return.Expression;
-                    writer.WriteLine($"return {cacheName}.AddResult({paramName},{expr});"); ;
+                    GenerateReturn(writer,ref cacheName,ref paramName, @return);
                 }
                 else
                     GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
@@ -115,6 +112,13 @@ namespace CacheSourceGenerator
             var str=stream.ToString();
             return str;
         }
+
+        private static void GenerateReturn(IndentedTextWriter writer, ref string cacheName,ref string paramName, ReturnStatementSyntax @return)
+        {
+            var expr = @return.Expression;
+            writer.WriteLine($"return {cacheName}.AddResult({paramName},{expr});");
+        }
+
         private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer)
         {
             foreach(var c in children)
@@ -122,18 +126,12 @@ namespace CacheSourceGenerator
                 if(c.IsNode)
                 {
                     if(c.AsNode() is ReturnStatementSyntax @return)
-                    {
-                        var expr=@return.Expression;
-                        writer.WriteLine($"\treturn {cacheName}.AddResult({paramName},{expr});\r\n");
-                    }
+                        GenerateReturn(writer, ref cacheName, ref paramName, @return);
                     else
-                    GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
+                        GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
                 }
                 else
-                {
-
                     writer.Write(c.ToFullString());
-                }
                 
             }
         }
