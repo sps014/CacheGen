@@ -30,7 +30,8 @@ namespace CacheSourceGenerator
             sb.AppendLine("public static class Gen{");
             ProcessTrees(trees,sb);
             sb.AppendLine("}");
-
+            var str = sb.ToString();
+            Console.WriteLine(str);
             context.AddSource("cacheGen.cs", SourceText.From(sb.ToString(), Encoding.UTF8));
         }
         private void ProcessTrees(IEnumerable<SyntaxTree> trees,StringBuilder sb)
@@ -68,7 +69,7 @@ namespace CacheSourceGenerator
             writer.Indent++;
             writer.WriteLine($"    private static LruCache<int,int> {cacheName} = new({size});");
             writer.WriteLine($"public static {returnType} {methodName}{paramList}");
-            writer.WriteLine("\b{");
+            writer.WriteLine("{");
             writer.Indent++;
 
             //start body here
@@ -99,7 +100,7 @@ namespace CacheSourceGenerator
                 if(statement is ReturnStatementSyntax @return)
                 {
                     var expr = @return.Expression;
-                    writer.WriteLine($"{cacheName}.AddResult({paramName},{expr});"); ;
+                    writer.WriteLine($"return {cacheName}.AddResult({paramName},{expr});"); ;
                 }
                 else
                     GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
@@ -112,7 +113,6 @@ namespace CacheSourceGenerator
 
             writer.WriteLine("}");
             var str=stream.ToString();
-            Console.WriteLine(str);
             return str;
         }
         private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer)
@@ -124,7 +124,7 @@ namespace CacheSourceGenerator
                     if(c.AsNode() is ReturnStatementSyntax @return)
                     {
                         var expr=@return.Expression;
-                        writer.WriteLine($"\t{cacheName}.AddResult({paramName},{expr});\r\n");
+                        writer.WriteLine($"\treturn {cacheName}.AddResult({paramName},{expr});\r\n");
                     }
                     else
                     GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
