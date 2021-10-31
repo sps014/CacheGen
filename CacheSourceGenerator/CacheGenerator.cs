@@ -65,7 +65,7 @@ namespace CacheSourceGenerator
             string returnType = method.ReturnType.GetText().ToString();
             int size = GetSizeOfCache(method);
             string paramList = method.ParameterList.ToFullString();
-            bool isVoid = method.ReturnType.GetText().ToString().Equals("void");
+            bool isVoid = method.ReturnType.GetText().ToString().Contains("void");
 
 
             string argTypes = string.Join(",", method.ParameterList.Parameters.Select(x => x.Type.ToString()));
@@ -73,8 +73,10 @@ namespace CacheSourceGenerator
             argTypes = isMoreThanOne ? $"({argTypes})":argTypes;
             var tupledParam = isMoreThanOne ? $"({paramName})" : paramName;
 
+            var dictReturnType = isVoid ? "object" : returnType;
+
             writer.Indent++;
-            writer.WriteLine($"    private static LruCache<{argTypes},{returnType}> {cacheName} = new({size});");
+            writer.WriteLine($"    private static LruCache<{argTypes},{dictReturnType}> {cacheName} = new({size});");
             writer.WriteLine($"public static {returnType} {methodName}{paramList}");
 
             writer.WriteLine("{");
@@ -86,10 +88,12 @@ namespace CacheSourceGenerator
             //if statement on top
             writer.WriteLine("if(contains)");
             writer.Indent++;
+
             if (isVoid)
                 writer.WriteLine("return;");
             else
                 writer.WriteLine($"return {cacheName}.Get({tupledParam});");
+
             writer.Indent--;
             //end of if
 
