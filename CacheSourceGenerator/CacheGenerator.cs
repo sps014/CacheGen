@@ -24,6 +24,7 @@ namespace CacheSourceGenerator
                 .Where(a=>a.Name.ToString().Contains("LruCache")).Count()>0);
             StringBuilder sb= new StringBuilder();
             sb.AppendLine("using System;");
+            sb.AppendLine("using System.Runtime.CompilerServices;");
             sb.AppendLine("namespace LibCache;");
             sb.AppendLine("public static partial class Gen\r\n{");
             ProcessTrees(trees,sb);
@@ -76,7 +77,8 @@ namespace CacheSourceGenerator
             var dictReturnType = isVoid ? "object" : returnType;
 
             writer.Indent++;
-            writer.WriteLine($"    private static LruCache<{argTypes},{dictReturnType}> {cacheName} = new({size});");
+            writer.WriteLine($"   private static LruCache<{argTypes},{dictReturnType}> {cacheName} = new({size});");
+            writer.WriteLine("[MethodImpl(MethodImplOptions.AggressiveInlining)]");
             writer.WriteLine($"public static {returnType} {methodName}{paramList}");
 
             writer.WriteLine("{");
@@ -130,7 +132,7 @@ namespace CacheSourceGenerator
         {
             var expr = @return.Expression;
             var tupledParam = moreThanOneArg ? $"({paramName})" : paramName;
-            writer.WriteLine($"return {cacheName}.AddResult({tupledParam},{expr});");
+            writer.WriteLine($"    return {cacheName}.AddResult({tupledParam},{expr});");
         }
 
         private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer, ref bool moreThanOneArg)
