@@ -21,10 +21,29 @@ namespace CacheSourceGenerator
             //get all tree with our attribute
             var trees = context.Compilation.SyntaxTrees
                 .Where(t => t.GetRoot().DescendantNodes().OfType<AttributeSyntax>()
-                .Where(a=>a.Name.ToString().Contains("LruCache")).Count()>0);
+                .Where(a=>a.Name.ToString().Contains("LruCache")).Count()>0).ToList();
+
+            var usings = new HashSet<string>(new UsingComparator());
+           
+            foreach (var t in trees)
+            {
+                var u = GetAllUsings(t);
+                foreach(var s in u)
+                {
+                    usings.Add(s);
+                }
+               
+            }
+            usings.Add("using System;\r\n");
+            usings.Add("using System.Runtime.CompilerServices;\r\n");
+
             StringBuilder sb= new StringBuilder();
-            sb.AppendLine("using System;");
-            sb.AppendLine("using System.Runtime.CompilerServices;");
+
+            foreach(var s in usings)
+            {
+                sb.Append(s);
+            }
+
             sb.AppendLine("namespace LibCache;");
             sb.AppendLine("public static partial class Gen\r\n{");
             ProcessTrees(trees,sb);
@@ -52,6 +71,7 @@ namespace CacheSourceGenerator
             return GetFunctionCachedDefinition(function);
 
         }
+
         private string GetFunctionCachedDefinition(FunctionInfo method)
         {
             if (method.ParameterList.Parameters.Count == 0)
@@ -215,11 +235,28 @@ namespace CacheSourceGenerator
             return allfunc.Union(local);
         }
 
-
+        private List<string> GetAllUsings(SyntaxTree tree)
+        {
+            return tree.GetRoot().DescendantNodes().OfType<UsingDirectiveSyntax>().Select(x =>x.GetText().ToString()).ToList();
+        }
 
         public void Initialize(GeneratorInitializationContext context)
         {
             // No initialization required for this one
+        }
+    }
+    class UsingComparator : IEqualityComparer<string>
+    {
+        public bool Equals(string x, string y)
+        {
+            x= Regex.Replace(x, @"\s+", "");
+            y = Regex.Replace(y, @"\s+", "");
+            return x.Equals(y);
+        }
+
+        public int GetHashCode(string obj)
+        {
+            return obj.GetHashCode();
         }
     }
 }

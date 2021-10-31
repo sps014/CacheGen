@@ -2,7 +2,6 @@
 using LibCache;
 
 Console.WriteLine(Pg.Fibbo(10));
-
 static class Pg
 {
     [LruCache(5000)]

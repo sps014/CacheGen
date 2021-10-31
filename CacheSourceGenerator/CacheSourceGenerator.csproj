@@ -4,7 +4,15 @@
     <TargetFramework>netstandard2.0</TargetFramework>
 	<IsRoslynComponent>true</IsRoslynComponent>
 	  <LangVersion>10</LangVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>CacheGen</PackageId>
+    <Authors>Shivendra Pratap Singh</Authors>
+    <Product />
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Version>1.0.0.5</Version>
   </PropertyGroup>
+	
+	
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3">
@@ -13,5 +21,15 @@
     </PackageReference>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.0-6.final" />
   </ItemGroup>
+
+	<!--Manual linking file as SG can't contain files-->
+	<ItemGroup>
+		<Compile Include="..\LibCache\LruCacheAttribute.cs" Link="LruCacheAttribute.cs" />
+		<Compile Include="..\LibCache\LruCacheCollection.cs" Link="LruCacheCollection.cs" />
+	</ItemGroup>
+	
+    <ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="true" />
+	</ItemGroup>
 
 </Project>
