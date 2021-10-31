@@ -53,6 +53,9 @@ namespace CacheSourceGenerator
         }
         private string GetFunctionCachedDefinition(LocalFunctionStatementSyntax method)
         {
+            if (method.ParameterList.Parameters.Count == 0)
+                return string.Empty;
+
             using StringWriter stream = new StringWriter();
             using IndentedTextWriter writer = new IndentedTextWriter(stream, "    ");
 
@@ -64,14 +67,21 @@ namespace CacheSourceGenerator
             string paramList = method.ParameterList.ToFullString();
             bool isVoid = method.ReturnType.GetText().ToString().Equals("void");
 
+
+            string argTypes = string.Join(",", method.ParameterList.Parameters.Select(x => x.Type.ToString()));
+            bool isMoreThanOne = method.ParameterList.Parameters.Count>1;
+            argTypes = isMoreThanOne ? $"({argTypes})":argTypes;
+            var tupledParam = isMoreThanOne ? $"({paramName})" : paramName;
+
             writer.Indent++;
-            writer.WriteLine($"    private static LruCache<int,int> {cacheName} = new({size});");
+            writer.WriteLine($"    private static LruCache<{argTypes},{returnType}> {cacheName} = new({size});");
             writer.WriteLine($"public static {returnType} {methodName}{paramList}");
+
             writer.WriteLine("{");
             writer.Indent++;
 
             //start body here
-            writer.WriteLine($"var contains = {cacheName}.Refer({paramName});");
+            writer.WriteLine($"var contains = {cacheName}.Refer({tupledParam});");
            
             //if statement on top
             writer.WriteLine("if(contains)");
@@ -79,7 +89,7 @@ namespace CacheSourceGenerator
             if (isVoid)
                 writer.WriteLine("return;");
             else
-                writer.WriteLine($"return {cacheName}.Get({paramName});");
+                writer.WriteLine($"return {cacheName}.Get({tupledParam});");
             writer.Indent--;
             //end of if
 
@@ -96,10 +106,10 @@ namespace CacheSourceGenerator
 
                 if(statement is ReturnStatementSyntax @return)
                 {
-                    GenerateReturn(writer,ref cacheName,ref paramName, @return);
+                    GenerateReturn(writer,ref cacheName,ref paramName, @return, ref isMoreThanOne);
                 }
                 else
-                    GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
+                    GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName,writer,ref isMoreThanOne);
                 
             }
 
@@ -112,22 +122,23 @@ namespace CacheSourceGenerator
             return str;
         }
 
-        private static void GenerateReturn(IndentedTextWriter writer, ref string cacheName,ref string paramName, ReturnStatementSyntax @return)
+        private static void GenerateReturn(IndentedTextWriter writer, ref string cacheName,ref string paramName, ReturnStatementSyntax @return, ref bool moreThanOneArg)
         {
             var expr = @return.Expression;
-            writer.WriteLine($"return {cacheName}.AddResult({paramName},{expr});");
+            var tupledParam = moreThanOneArg ? $"({paramName})" : paramName;
+            writer.WriteLine($"return {cacheName}.AddResult({tupledParam},{expr});");
         }
 
-        private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer)
+        private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer, ref bool moreThanOneArg)
         {
             foreach(var c in children)
             {
                 if(c.IsNode)
                 {
                     if(c.AsNode() is ReturnStatementSyntax @return)
-                        GenerateReturn(writer, ref cacheName, ref paramName, @return);
+                        GenerateReturn(writer, ref cacheName, ref paramName, @return, ref moreThanOneArg);
                     else
-                        GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
+                        GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer, ref moreThanOneArg);
                 }
                 else
                     writer.Write(c.ToFullString());

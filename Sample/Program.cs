@@ -4,11 +4,11 @@ using LibCache;
 Console.WriteLine(Fibbo(10));
 
 [LruCache(5000)]
-static int Fibbo(int x){
+static int Fibbo(int x,int y=0){
     if (x == 1 || x == 0)
         return x;
 
-    return FibboCached(x - 1) + FibboCached(x - 2);
+    return FibboCached(x - 1,y) + FibboCached(x - 2,y);
 }
 
 
