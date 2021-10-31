@@ -77,11 +77,11 @@ namespace CacheSourceGenerator
             var dictReturnType = isVoid ? "object" : returnType;
 
             writer.Indent++;
-            writer.WriteLine($"   private static LruCache<{argTypes},{dictReturnType}> {cacheName} = new({size});");
+            writer.WriteLine($"    private static LruCache<{argTypes},{dictReturnType}> {cacheName} = new({size});");
             writer.WriteLine("[MethodImpl(MethodImplOptions.AggressiveInlining)]");
-            writer.WriteLine($"public static {returnType} {methodName}{paramList}");
+            writer.Write($"public static {returnType} {methodName}{paramList}");
 
-            writer.WriteLine("{");
+            writer.WriteLine("    {");
             writer.Indent++;
 
             //start body here
@@ -96,7 +96,7 @@ namespace CacheSourceGenerator
             else
                 writer.WriteLine($"return {cacheName}.Get({tupledParam});");
 
-            writer.Indent--;
+            writer.Indent-=3;
             //end of if
 
 
@@ -119,11 +119,9 @@ namespace CacheSourceGenerator
                 
             }
 
-
-            writer.Indent--;
             //end of body
-
-            writer.WriteLine("}");
+           
+            writer.WriteLine("    }\r\n");
             var str=stream.ToString();
             return str;
         }
@@ -131,8 +129,10 @@ namespace CacheSourceGenerator
         private static void GenerateReturn(IndentedTextWriter writer, ref string cacheName,ref string paramName, ReturnStatementSyntax @return, ref bool moreThanOneArg)
         {
             var expr = @return.Expression;
+            var space=string.Join("",@return.ToFullString().TakeWhile(x=>char.IsWhiteSpace(x)));
+
             var tupledParam = moreThanOneArg ? $"({paramName})" : paramName;
-            writer.WriteLine($"    return {cacheName}.AddResult({tupledParam},{expr});");
+                writer.WriteLine($"{space}return {cacheName}.AddResult({tupledParam},{expr});");
         }
 
         private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer, ref bool moreThanOneArg)
