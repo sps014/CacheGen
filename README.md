@@ -5,7 +5,7 @@ python code looks like
 ```py
 @lru_cache
 def fibbo(x):
-   if x==0 || x==1:
+   if x==0 or x==1:
        return x
    return fibbo(x-2)+fibbo(x-1)
 ```
