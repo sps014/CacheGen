@@ -102,7 +102,7 @@ namespace CacheSourceGenerator
                     writer.WriteLine($"{cacheName}.AddResult({paramName},{expr});"); ;
                 }
                 else
-                    writer.WriteLine(GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName));
+                    GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
                 
             }
 
@@ -115,9 +115,8 @@ namespace CacheSourceGenerator
             Console.WriteLine(str);
             return str;
         }
-        private string GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName)
+        private void GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName,IndentedTextWriter writer)
         {
-            string result = "";
             foreach(var c in children)
             {
                 if(c.IsNode)
@@ -125,21 +124,18 @@ namespace CacheSourceGenerator
                     if(c.AsNode() is ReturnStatementSyntax @return)
                     {
                         var expr=@return.Expression;
-                        result += $"\t{cacheName}.AddResult({paramName},{expr});\r\n";
+                        writer.WriteLine($"\t{cacheName}.AddResult({paramName},{expr});\r\n");
                     }
                     else
-                    result+=GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName);
+                    GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName,writer);
                 }
                 else
                 {
 
-                    result += c.ToFullString();
+                    writer.Write(c.ToFullString());
                 }
                 
             }
-
-            
-            return result;
         }
 
         private int GetSizeOfCache(SyntaxNode function)
