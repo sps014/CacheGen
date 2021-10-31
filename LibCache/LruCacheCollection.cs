@@ -4,8 +4,8 @@ namespace LibCache;
 
 public class LruCache<T, R>
 {
-    private Dictionary<T, DoublyNode<T>> cache = new();
-    private Dictionary<T, R> result = new();
+    private readonly Dictionary<T, DoublyNode<T>> cache = new();
+    private readonly Dictionary<T, R> result = new();
 
     private DoublyLinkList<T> list = new();
     public LruCache(int capacity = 3)
@@ -81,11 +81,6 @@ public class LruCache<T, R>
             return result[value];
         return default;
     }
-    public bool ContainsResult(T input)
-    {
-        return result.ContainsKey(input);
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R AddResult(T input, R output)
     {
