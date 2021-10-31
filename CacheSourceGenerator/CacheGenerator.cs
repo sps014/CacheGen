@@ -46,12 +46,12 @@ namespace CacheSourceGenerator
                 }
             }
         }
-        private string GenerateCachedVariant(LocalFunctionStatementSyntax function)
+        private string GenerateCachedVariant(FunctionInfo function)
         {
             return GetFunctionCachedDefinition(function);
 
         }
-        private string GetFunctionCachedDefinition(LocalFunctionStatementSyntax method)
+        private string GetFunctionCachedDefinition(FunctionInfo method)
         {
             if (method.ParameterList.Parameters.Count == 0)
                 return string.Empty;
@@ -150,9 +150,9 @@ namespace CacheSourceGenerator
             }
         }
 
-        private int GetSizeOfCache(SyntaxNode function)
+        private int GetSizeOfCache(FunctionInfo function)
         {
-            var attrbutes = (function as LocalFunctionStatementSyntax).AttributeLists;
+            var attrbutes = function.AttributeLists;
             int size = GetAttributeSize(attrbutes);
             return size;
         }
@@ -178,10 +178,39 @@ namespace CacheSourceGenerator
         }
 
  
-        private IEnumerable<LocalFunctionStatementSyntax> ProcessFunction(List<SyntaxNode> nodes)
+        private IEnumerable<FunctionInfo> ProcessFunction(List<SyntaxNode> nodes)
         {
-            return nodes.OfType<LocalFunctionStatementSyntax>()
-               .Where(f => f.AttributeLists.Count(a => a.GetText().ToString().Contains("[LruCache")) > 0);
+            var allfunc= nodes.OfType<MethodDeclarationSyntax>()
+               .Where(f => f.AttributeLists.Count(a => a.GetText().ToString().Contains("[LruCache")) > 0)
+               .Select(x=>
+               {
+                   return new FunctionInfo
+                   {
+                       Body = x.Body,
+                       Identifier = x.Identifier,
+                       ParameterList = x.ParameterList,
+                       ReturnType=x.ReturnType,
+                       AttributeLists=x.AttributeLists
+                   };
+               }
+               );
+
+            var local= nodes.OfType<LocalFunctionStatementSyntax>()
+               .Where(f => f.AttributeLists.Count(a => a.GetText().ToString().Contains("[LruCache")) > 0)
+               .Select(x =>
+               {
+                   return new FunctionInfo
+                   {
+                       Body = x.Body,
+                       Identifier = x.Identifier,
+                       ParameterList = x.ParameterList,
+                       ReturnType = x.ReturnType,
+                       AttributeLists=x.AttributeLists
+                   };
+               }
+               );
+
+            return allfunc.Union(local);
         }
 
 
