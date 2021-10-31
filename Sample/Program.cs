@@ -9,6 +9,8 @@ string Y = "GXTXAYB";
 Console.Write("Length of LCS is "
               + Lcs(X, Y, X.Length, Y.Length));
 
+Dfs(10);
+
 [LruCache(5000)]
 static int Fibbo(int x)
 {
@@ -32,5 +34,10 @@ static int Lcs(string X, string Y, int m, int n)
 [LruCache]
 static void Dfs(int y)
 {
-    DfsCached(5);
+    if (y < 0)
+        return;
+
+    Console.WriteLine(y);
+
+    DfsCached(y-1);
 }
