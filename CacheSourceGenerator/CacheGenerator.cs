@@ -7,6 +7,9 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Drawing;
 using System.Text;
+using System.Xml.Linq;
+using System.CodeDom.Compiler;
+using System.IO;
 
 namespace CacheSourceGenerator
 {
@@ -46,63 +49,103 @@ namespace CacheSourceGenerator
         }
         private string GenerateCachedVariant(LocalFunctionStatementSyntax function)
         {
-            int size=GetSizeOfCache(function);   
-            var newDef=GetFunctionCachedDefinition(function);
-            string cache = $"static LruCache<int,int> cache = new({size});";
+            return GetFunctionCachedDefinition(function);
 
-            return cache +"\r\n"+ newDef;
         }
         private string GetFunctionCachedDefinition(LocalFunctionStatementSyntax method)
         {
-            string result = "public ";
-            //add modifiers
-            result += method.Modifiers.ToFullString();
-            // add return type
-            result += $"{method.ReturnType.GetText()}";
-            //add function name 
-            result += $"{method.Identifier.ValueText}Cached";
-            //add brackets and parameters
-            result += $"{method.ParameterList.ToFullString()}{{\r\n";
+            using StringWriter stream = new StringWriter();
+            using IndentedTextWriter writer = new IndentedTextWriter(stream, "    ");
 
+            string methodName = $"{method.Identifier.ValueText}Cached";
+            string cacheName = $"{method.Identifier.ValueText}_cache";
             string paramName = string.Join(",", method.ParameterList.Parameters.Select(x => x.Identifier));
-            //add cacherefer
-            result += $"\tvar contains = cache.Refer({paramName});\r\n";
-            result += $"\tif(contains)";
+            string returnType = method.ReturnType.GetText().ToString();
+            int size = GetSizeOfCache(method);
+            string paramList = method.ParameterList.ToFullString();
+            bool isVoid = method.ReturnType.GetText().ToString().Equals("void");
 
-            bool isVoid=false;
+            writer.Indent++;
+            writer.WriteLine($"    private static LruCache<int,int> {cacheName} = new({size});");
+            writer.WriteLine($"public static {returnType} {methodName}{paramList}");
+            writer.WriteLine("\b{");
+            writer.Indent++;
 
-            if(method.ReturnType.GetText().ToString().Contains("void"))
-            {
-                isVoid=true;
-                result += "return;\r\n";
-            }
+            //start body here
+            writer.WriteLine($"var contains = {cacheName}.Refer({paramName});");
+           
+            //if statement on top
+            writer.WriteLine("if(contains)");
+            writer.Indent++;
+            if (isVoid)
+                writer.WriteLine("return;");
             else
-            {
-                result += $"return cache.Get({paramName});\r\n";
-            }
+                writer.WriteLine($"return {cacheName}.Get({paramName});");
+            writer.Indent--;
+            //end of if
 
-            foreach (var st in method.Body.Statements)
+
+
+
+            foreach (var statement in method.Body.Statements)
             {
-                var stmt=st.GetText().ToString();
-                
-                if (stmt.Contains("return") && !isVoid)
+                if(isVoid)
                 {
-                    var r = stmt.Replace("return ", $"return cache.AddResult({paramName},").TrimEnd(new char[] {'\r','\n',';'});
-                    result += r+");\r\n";
+                    writer.WriteLine(statement.GetText());
+                    continue;
+                }
+
+                //var returns =statement.DescendantNodes().OfType<ReturnStatementSyntax>().ToList();
+                if(statement is ReturnStatementSyntax @return)
+                {
+                    var expr = @return.Expression;
+                    writer.WriteLine($"{cacheName}.AddResult({paramName},{expr});"); ;
                 }
                 else
-                    result += stmt;
+                    writer.WriteLine(GenerateBody(statement.ChildNodesAndTokens(),ref paramName,ref cacheName));
+                
             }
-            result += "}\r\n";
-            Console.WriteLine(result);
+
+
+            writer.Indent--;
+            //end of body
+
+            writer.WriteLine("}");
+            var str=stream.ToString();
+            Console.WriteLine(str);
+            return str;
+        }
+        private string GenerateBody(ChildSyntaxList children,ref string paramName,ref string cacheName)
+        {
+            string result = "";
+            foreach(var c in children)
+            {
+                if(c.IsNode)
+                {
+                    if(c.AsNode() is ReturnStatementSyntax @return)
+                    {
+                        var expr=@return.Expression;
+                        result += $"\t{cacheName}.AddResult({paramName},{expr});\r\n";
+                    }
+                    else
+                    result+=GenerateBody(c.AsNode().ChildNodesAndTokens(),ref paramName,ref cacheName);
+                }
+                else
+                {
+
+                    result += c.ToFullString();
+                }
+                
+            }
+
+            
             return result;
         }
 
         private int GetSizeOfCache(SyntaxNode function)
         {
-            int size = LruSize;
             var attrbutes = (function as LocalFunctionStatementSyntax).AttributeLists;
-            size = GetAttributeSize(attrbutes);
+            int size = GetAttributeSize(attrbutes);
             return size;
         }
         private int GetAttributeSize(SyntaxList<AttributeListSyntax> attrbutes)

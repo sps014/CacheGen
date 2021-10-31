@@ -8,10 +8,11 @@ Console.WriteLine(Fibbo(10));
 
 [LruCache(5000)]
 
-static int Fibbo(int x)
-{
+static int Fibbo(int x){
     if (x == 1 || x == 0)
         return x;
+    else
+        return 1;
 
     return FibboCached(x - 1) + FibboCached(x - 2);
 }
