@@ -6,7 +6,7 @@ dotnet add package CacheGen
 ```
 
 
-A python inspired libary for DotNet to auto implement a Cache function for given method with Source Generator at compile Time.<br>
+A python inspired library for C# to auto implement a Cache function for given method with the help of Source Generator at compile Time.<br>
 python code looks like
 ```py
 @lru_cache
